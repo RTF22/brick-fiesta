@@ -128,28 +128,29 @@
   });
   window.addEventListener('keyup', (e) => { state.keys[e.key.toLowerCase()] = false; });
 
+  function launchStuckBall(b) {
+    // Winkel aus der Auftreffposition berechnen (wie beim normalen Paddle-Hit)
+    const halfW = state.paddle.w / 2;
+    const off = Math.max(-halfW, Math.min(halfW, b.stickOffset || 0));
+    const rel = off / halfW;            // -1..+1
+    const angle = rel * (Math.PI / 3);  // -60°..+60° gegenüber der Senkrechten
+    const sp = baseBallSpeed();
+    b.vx = Math.sin(angle) * sp;
+    b.vy = -Math.abs(Math.cos(angle) * sp);
+    b.stuck = false;
+    b.stickOffset = 0;
+  }
+
   function handleAction() {
     Audio16.resume();
     if (state.launchPending && state.balls.length) {
       const b = state.balls[0];
-      const angle = -Math.PI/2 + (Math.random()*0.6 - 0.3);
-      const sp = baseBallSpeed();
-      b.vx = Math.cos(angle) * sp;
-      b.vy = Math.sin(angle) * sp;
-      b.stuck = false;
+      launchStuckBall(b);
       state.launchPending = false;
       Audio16.sfx.paddle();
     } else if (state.paddleSticky) {
       // Sticky-Paddle: alle haftenden Bälle freigeben
-      state.balls.forEach(b => {
-        if (b.stuck) {
-          const angle = -Math.PI/2 + (Math.random()*0.6 - 0.3);
-          const sp = baseBallSpeed();
-          b.vx = Math.cos(angle) * sp;
-          b.vy = Math.sin(angle) * sp;
-          b.stuck = false;
-        }
-      });
+      state.balls.forEach(b => { if (b.stuck) launchStuckBall(b); });
       if (state.laser.active && performance.now() < state.laser.until) {
         fireLaser();
       }
@@ -309,7 +310,9 @@
     for (let i = state.balls.length - 1; i >= 0; i--) {
       const b = state.balls[i];
       if (b.stuck) {
-        b.x = state.paddle.x;
+        const halfW = state.paddle.w / 2;
+        const off = Math.max(-halfW, Math.min(halfW, b.stickOffset || 0));
+        b.x = state.paddle.x + off;
         b.y = state.paddle.y - state.paddle.h/2 - b.r - 1;
         continue;
       }
@@ -335,6 +338,8 @@
         if (state.paddleSticky) {
           b.stuck = true;
           b.vx = 0; b.vy = 0;
+          // Auftreffposition relativ zur Paddle-Mitte merken
+          b.stickOffset = b.x - state.paddle.x;
         }
         Audio16.sfx.paddle();
       }
