@@ -1,5 +1,5 @@
 // Brick Fiesta - Service Worker (Cache-First, Offline-fähig)
-const CACHE = 'brick-fiesta-v4';
+const CACHE = 'brick-fiesta-v5';
 const ASSETS = [
   './',
   './index.html',

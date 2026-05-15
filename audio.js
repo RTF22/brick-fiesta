@@ -5,8 +5,10 @@
 const Audio16 = (() => {
   let ctx = null;
   let masterGain = null;
+  let sfxGain = null;
   let musicGain = null;
-  let muted = false;
+  let sfxMuted = false;
+  let musicMuted = false;
   let musicTimer = null;
   let musicStarted = false;
   let nextNoteTime = 0;
@@ -69,10 +71,17 @@ const Audio16 = (() => {
     ctx = new AC();
     masterGain = ctx.createGain();
     masterGain.gain.value = 0.35;
+    // Zwei Bus-Gains: SFX und Musik getrennt regelbar
+    sfxGain = ctx.createGain();
+    sfxGain.gain.value = 1;
+    musicGain = ctx.createGain();
+    musicGain.gain.value = 1;
     // Leichter Lowpass für "Amiga-Feeling"
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 12000;
+    sfxGain.connect(masterGain);
+    musicGain.connect(masterGain);
     masterGain.connect(lp).connect(ctx.destination);
     return ctx;
   }
@@ -82,19 +91,35 @@ const Audio16 = (() => {
     if (ctx.state === 'suspended') ctx.resume();
   }
 
-  function setMuted(m) {
-    muted = m;
+  function setSfxMuted(m) {
+    sfxMuted = m;
     ensure();
-    masterGain.gain.value = m ? 0 : 0.35;
-    if (currentAudio) currentAudio.volume = m ? 0 : 0.5;
+    sfxGain.gain.value = m ? 0 : 1;
   }
-  function isMuted() { return muted; }
+  function setMusicMuted(m) {
+    musicMuted = m;
+    ensure();
+    musicGain.gain.value = m ? 0 : 1;
+    if (currentAudio) currentAudio.volume = m ? 0 : 0.5;
+    if (m) stopMusic();
+  }
+  function isSfxMuted()   { return sfxMuted; }
+  function isMusicMuted() { return musicMuted; }
+
+  // Aktuell aktiver Bus für die folgenden Oszillator-Aufrufe.
+  // Wird vor jedem Musik-Step auf musicGain gesetzt, sonst sfxGain.
+  let activeBus = null;
+  function bus() { return activeBus || sfxGain; }
+  function isBusMuted() {
+    if (activeBus === musicGain) return musicMuted;
+    return sfxMuted;
+  }
 
   // ---- Synth-Primitive ----------------------------------------
 
   // PWM-artiger Lead via zwei verstimmte Sägen.
   function pwmLead(freq, dur, vol = 0.18, when = 0) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const o1 = ctx.createOscillator();
     const o2 = ctx.createOscillator();
@@ -122,14 +147,14 @@ const Audio16 = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     o1.connect(filt); o2.connect(filt);
-    filt.connect(g).connect(masterGain);
+    filt.connect(g).connect(bus());
     o1.start(t0); o2.start(t0); lfo.start(t0);
     o1.stop(t0 + dur + 0.05); o2.stop(t0 + dur + 0.05); lfo.stop(t0 + dur + 0.05);
   }
 
   // Pulswelle - klassischer Chiptune-Lead
   function pulse(freq, dur, vol = 0.15, when = 0, type = 'square') {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const o = ctx.createOscillator();
     o.type = type;
@@ -138,14 +163,14 @@ const Audio16 = (() => {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(masterGain);
+    o.connect(g).connect(bus());
     o.start(t0);
     o.stop(t0 + dur + 0.02);
   }
 
   // Octave-Bass mit Saw + Sub
   function bass(freq, dur, vol = 0.22, when = 0) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const o1 = ctx.createOscillator();
     o1.type = 'sawtooth';
@@ -164,14 +189,14 @@ const Audio16 = (() => {
     g.gain.exponentialRampToValueAtTime(vol * 0.5, t0 + dur * 0.5);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o1.connect(filt); o2.connect(filt);
-    filt.connect(g).connect(masterGain);
+    filt.connect(g).connect(bus());
     o1.start(t0); o2.start(t0);
     o1.stop(t0 + dur + 0.02); o2.stop(t0 + dur + 0.02);
   }
 
   // Drums --------------------------------------------------------
   function kick(when = 0, vol = 0.4) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const o = ctx.createOscillator();
     o.type = 'sine';
@@ -180,12 +205,12 @@ const Audio16 = (() => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t0);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
-    o.connect(g).connect(masterGain);
+    o.connect(g).connect(bus());
     o.start(t0); o.stop(t0 + 0.2);
   }
 
   function snare(when = 0, vol = 0.25) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -196,7 +221,7 @@ const Audio16 = (() => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t0);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
-    src.connect(hp).connect(g).connect(masterGain);
+    src.connect(hp).connect(g).connect(bus());
     src.start(t0); src.stop(t0 + 0.15);
     // Tonale Komponente
     const o = ctx.createOscillator();
@@ -204,12 +229,12 @@ const Audio16 = (() => {
     const og = ctx.createGain();
     og.gain.setValueAtTime(vol * 0.5, t0);
     og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
-    o.connect(og).connect(masterGain);
+    o.connect(og).connect(bus());
     o.start(t0); o.stop(t0 + 0.1);
   }
 
   function hat(when = 0, vol = 0.1) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime + when;
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -220,13 +245,13 @@ const Audio16 = (() => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t0);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
-    src.connect(hp).connect(g).connect(masterGain);
+    src.connect(hp).connect(g).connect(bus());
     src.start(t0); src.stop(t0 + 0.06);
   }
 
   // ---- Soundeffekte -------------------------------------------
   function shortTone(freq, dur, type, vol, slide) {
-    if (!ctx || muted) return;
+    if (!ctx || isBusMuted()) return;
     const t0 = ctx.currentTime;
     const o = ctx.createOscillator();
     o.type = type;
@@ -236,7 +261,7 @@ const Audio16 = (() => {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(masterGain);
+    o.connect(g).connect(bus());
     o.start(t0); o.stop(t0 + dur + 0.02);
   }
 
@@ -259,7 +284,7 @@ const Audio16 = (() => {
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.15, ctx.currentTime);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
-      src.connect(f).connect(g).connect(masterGain);
+      src.connect(f).connect(g).connect(bus());
       src.start(); src.stop(ctx.currentTime + 0.1);
     },
     powerup: () => {
@@ -470,22 +495,25 @@ const Audio16 = (() => {
   }
 
   function tick() {
-    if (!ctx || muted || !musicStarted) return;
+    if (!ctx || musicMuted || !musicStarted) return;
     const bpm = 120 + Math.min(40, currentLevel * 0.5) + currentVariant.bpmOffset;
     const sixteenth = 60 / bpm / 4;
     const lookahead = 0.15; // sek vorausplanen
+    // Alle in scheduleStep erzeugten Töne landen auf dem Musik-Bus
+    activeBus = musicGain;
     while (nextNoteTime < ctx.currentTime + lookahead) {
       scheduleStep(stepIndex % stepCount, nextNoteTime - ctx.currentTime);
       stepIndex++;
       nextNoteTime += sixteenth;
     }
+    activeBus = null;
     musicTimer = setTimeout(tick, 30);
   }
 
   function startMusic(level = 1) {
     ensure();
     stopMusic();
-    if (muted) return;
+    if (musicMuted) return;
     currentLevel = level;
     // Immer prozeduraler Chiptune (externe Tracks deaktiviert)
     currentVariant = variantForLevel(level);
@@ -502,5 +530,8 @@ const Audio16 = (() => {
     stopExternalMusic();
   }
 
-  return { resume, setMuted, isMuted, sfx, startMusic, stopMusic };
+  return {
+    resume, sfx, startMusic, stopMusic,
+    setSfxMuted, setMusicMuted, isSfxMuted, isMusicMuted,
+  };
 })();

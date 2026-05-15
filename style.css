@@ -40,7 +40,9 @@ html, body {
   background: linear-gradient(180deg, #0f0820 0%, #2b1455 100%);
   box-shadow: 0 0 60px rgba(255, 92, 210, 0.25), inset 0 0 0 2px rgba(255,255,255,0.06);
   image-rendering: pixelated;
+  cursor: none;
 }
+#game.cursor-visible { cursor: default; }
 
 #hud {
   display: none;

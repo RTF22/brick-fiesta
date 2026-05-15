@@ -98,7 +98,8 @@
   canvas.addEventListener('mousedown', (e) => {
     const hit = hitTestHud(e);
     if (hit === 'pause') { togglePause(); return; }
-    if (hit === 'sound') { toggleMute(); return; }
+    if (hit === 'sfx')   { toggleSfx(); return; }
+    if (hit === 'music') { toggleMusic(); return; }
     state.pointer.x = pointerFromEvent(e);
     handleAction();
   });
@@ -106,7 +107,8 @@
     e.preventDefault();
     const hit = hitTestHud(e);
     if (hit === 'pause') { togglePause(); return; }
-    if (hit === 'sound') { toggleMute(); return; }
+    if (hit === 'sfx')   { toggleSfx(); return; }
+    if (hit === 'music') { toggleMusic(); return; }
     state.pointer.x = pointerFromEvent(e);
     state.pointer.active = true;
     handleAction();
@@ -120,7 +122,8 @@
     state.keys[e.key.toLowerCase()] = true;
     if (e.key === ' ') { e.preventDefault(); handleAction(); }
     if (e.key.toLowerCase() === 'p') togglePause();
-    if (e.key.toLowerCase() === 'm') toggleMute();
+    if (e.key.toLowerCase() === 'm') toggleMusic();
+    if (e.key.toLowerCase() === 'n') toggleSfx();
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') state.pointer.active = false;
   });
   window.addEventListener('keyup', (e) => { state.keys[e.key.toLowerCase()] = false; });
@@ -893,14 +896,17 @@
     drawHudCell(padX + infoCellW,              cellY, infoCellW - 4, cellH, 'SCORE', String(state.score));
     drawHudCell(padX + infoCellW * 2,          cellY, infoCellW - 4, cellH, 'LIVES', '♥'.repeat(Math.max(0, state.lives)) || '–');
 
-    // Buttons rechts
-    const btnX1 = W - padX - btnSize * 2 - btnGap;
-    const btnX2 = W - padX - btnSize;
+    // Buttons rechts: Pause · SFX · Musik
+    const btnX1 = W - padX - btnSize * 3 - btnGap * 2;
+    const btnX2 = W - padX - btnSize * 2 - btnGap;
+    const btnX3 = W - padX - btnSize;
     const btnY = cellY + (cellH - btnSize) / 2;
-    drawHudButton(btnX1, btnY, btnSize, state.paused ? '▶' : 'II', 'pause');
-    drawHudButton(btnX2, btnY, btnSize, Audio16.isMuted() ? '🔇' : '♪', 'sound');
+    drawHudButton(btnX1, btnY, btnSize, state.paused ? '▶' : 'II', 'pause', false);
+    drawHudButton(btnX2, btnY, btnSize, '🔊', 'sfx', Audio16.isSfxMuted());
+    drawHudButton(btnX3, btnY, btnSize, '♪',  'music', Audio16.isMusicMuted());
     hudButtons.pause = { x: btnX1, y: btnY, w: btnSize, h: btnSize };
-    hudButtons.sound = { x: btnX2, y: btnY, w: btnSize, h: btnSize };
+    hudButtons.sfx   = { x: btnX2, y: btnY, w: btnSize, h: btnSize };
+    hudButtons.music = { x: btnX3, y: btnY, w: btnSize, h: btnSize };
   }
 
   function drawHudCell(x, y, w, h, label, value) {
@@ -955,12 +961,18 @@
     ctx.fillText(value, x + w/2, vy);
   }
 
-  function drawHudButton(x, y, size, label, kind) {
-    // Metallischer Knopf
+  function drawHudButton(x, y, size, label, kind, disabled) {
+    // Metallischer Knopf - bei "disabled" entsättigt/dunkler
     const g = ctx.createLinearGradient(x, y, x, y + size);
-    g.addColorStop(0, '#d8dce8');
-    g.addColorStop(0.5, '#8a92aa');
-    g.addColorStop(1, '#3a4060');
+    if (disabled) {
+      g.addColorStop(0, '#5a5e6a');
+      g.addColorStop(0.5, '#3a3e4a');
+      g.addColorStop(1, '#1a1e2a');
+    } else {
+      g.addColorStop(0, '#d8dce8');
+      g.addColorStop(0.5, '#8a92aa');
+      g.addColorStop(1, '#3a4060');
+    }
     ctx.fillStyle = g;
     roundRect(ctx, x, y, size, size, 6, true, false);
     // Inset
@@ -970,14 +982,24 @@
     ctx.rect(x + 0.5, y + 0.5, size - 1, size - 1);
     ctx.stroke();
     // Glanz oben
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = `rgba(255,255,255,${disabled ? 0.15 : 0.4})`;
     roundRect(ctx, x + 3, y + 3, size - 6, size * 0.3, 3, true, false);
     // Symbol
     ctx.font = 'bold 18px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#101428';
+    ctx.fillStyle = disabled ? '#5a6080' : '#101428';
     ctx.fillText(label, x + size/2, y + size/2 + 1);
+    // Roter Diagonalstrich bei "stumm"
+    if (disabled) {
+      ctx.strokeStyle = '#ff3a3a';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y + size - 6);
+      ctx.lineTo(x + size - 6, y + 6);
+      ctx.stroke();
+    }
   }
 
   function drawWalls() {
@@ -1111,11 +1133,13 @@
     if (state.paused) Audio16.stopMusic();
     else Audio16.startMusic(state.level);
   }
-  function toggleMute() {
-    const m = !Audio16.isMuted();
-    Audio16.setMuted(m);
-    if (m) Audio16.stopMusic();
-    else if (state.running) Audio16.startMusic(state.level);
+  function toggleSfx() {
+    Audio16.setSfxMuted(!Audio16.isSfxMuted());
+  }
+  function toggleMusic() {
+    const newMuted = !Audio16.isMusicMuted();
+    Audio16.setMusicMuted(newMuted);
+    if (!newMuted && state.running) Audio16.startMusic(state.level);
   }
 
   // === Game Loop ==============================================
