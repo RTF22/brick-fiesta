@@ -666,19 +666,43 @@
     ctx.ellipse(x + 8, y + 5, 4, 2, 0, 0, Math.PI*2);
     ctx.fill();
 
-    // 8) HP-Indikator bei mehrstufigen Bricks (Punkte statt Zahl - Amiga-Stil)
-    if (br.maxHp > 1 && br.kind !== 'wall') {
-      const dots = br.hp;
-      const dotSize = 3;
-      const spacing = 6;
-      const totalW = dots * spacing - (spacing - dotSize);
-      const startX = x + br.w/2 - totalW/2;
-      const cy = y + br.h - 7;
-      for (let i = 0; i < dots; i++) {
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(startX + i * spacing + 1, cy + 1, dotSize, dotSize);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(startX + i * spacing, cy, dotSize, dotSize);
+    // 8) Schaden-Visualisierung: Farb-Nuance + Risse statt Zahl/Punkte
+    if (br.maxHp > 1 && br.kind !== 'wall' && br.hp < br.maxHp) {
+      const damage = (br.maxHp - br.hp) / br.maxHp; // 0..1
+
+      // Verdunkelt + leicht entsättigt (mehrere Layer für nichtlineares Empfinden)
+      ctx.fillStyle = `rgba(0,0,0,${damage * 0.35})`;
+      roundRect(ctx, x + 1, y + 1, br.w - 2, br.h - 3, r - 1, true, false);
+      ctx.fillStyle = `rgba(80,80,100,${damage * 0.18})`;
+      roundRect(ctx, x + 1, y + 1, br.w - 2, br.h - 3, r - 1, true, false);
+
+      // Risse - werden mit Schaden mehr und länger.
+      // Position deterministisch aus br.shimmer, damit sie nicht flackern.
+      const crackCount = Math.min(4, Math.floor(damage * (br.maxHp - 1)) + 1);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (let i = 0; i < crackCount; i++) {
+        const seed = br.shimmer + i * 1.73;
+        const cx = x + br.w * (0.25 + 0.5 * ((Math.sin(seed * 3.1) + 1) * 0.5));
+        const cy = y + br.h * (0.25 + 0.5 * ((Math.cos(seed * 2.7) + 1) * 0.5));
+        const len = 4 + damage * 6;
+        const ang = seed * 4.1;
+        // Dunkle Hauptlinie
+        ctx.strokeStyle = `rgba(0,0,0,${0.35 + damage * 0.25})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
+        ctx.lineTo(cx + Math.cos(ang) * len + Math.cos(ang + 0.9) * len * 0.4,
+                   cy + Math.sin(ang) * len + Math.sin(ang + 0.9) * len * 0.4);
+        ctx.stroke();
+        // Heller Glanz-Highlight daneben für mehr Tiefe
+        ctx.strokeStyle = `rgba(255,255,255,${0.15 + damage * 0.15})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx + 1, cy + 1);
+        ctx.lineTo(cx + 1 + Math.cos(ang) * len * 0.6, cy + 1 + Math.sin(ang) * len * 0.6);
+        ctx.stroke();
       }
     }
 
