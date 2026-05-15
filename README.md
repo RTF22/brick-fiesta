@@ -3,8 +3,6 @@
 Buntes Brick-Breaker-Spiel im 16-bit-Stil — als reine HTML5-Webapp.
 Läuft im Browser, lässt sich als **PWA** unter Windows, Android und iOS installieren, und kommt vollständig **ohne Tracker, ohne Abhängigkeiten, ohne Build-Schritt** aus.
 
-> **Hinweis zu Markenrechten:** Der Name "Brick Fiesta" und sämtliche Assets sind eigenständig. Es bestehen keinerlei Bezüge zu "Breakout®" (Atari) oder "Arkanoid®" (Taito).
-
 ## Features
 
 - **60+ Level** mit sanft ansteigendem Schwierigkeitsgrad
