@@ -1,11 +1,12 @@
 // Brick Fiesta - Service Worker (Cache-First, Offline-fähig)
-const CACHE = 'brick-fiesta-v5';
+const CACHE = 'brick-fiesta-v6';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './game.js',
   './levels.js',
+  './backgrounds.js',
   './audio.js',
   './manifest.webmanifest',
   './icon.svg',

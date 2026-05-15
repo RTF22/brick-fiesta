@@ -467,6 +467,7 @@
 
     const nextIdx = (state.level - 1) % LEVELS.length;
     const nextName = LEVELS[nextIdx].name;
+    const nextBg = Backgrounds.nameForLevel(state.level);
     const msg = `
       <div class="lvl-stats">
         <div><span class="lbl">Level-Bonus</span><span>+1000</span></div>
@@ -476,6 +477,7 @@
         <div class="sep"></div>
         <div><span class="lbl">Als Nächstes</span><span>Level ${state.level}</span></div>
         <div class="next-name">„${nextName}"</div>
+        <div><span class="lbl">Schauplatz</span><span>${nextBg}</span></div>
       </div>`;
     showOverlay(`✨ Level ${completed} geschafft!`, msg, () => {
       loadLevel(state.level);
@@ -530,21 +532,12 @@
       );
     }
 
-    // Hintergrund
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#0f0820');
-    grad.addColorStop(1, '#2b1455');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
+    // Dynamischer Hintergrund pro Level
+    Backgrounds.draw(state.level, performance.now(), ctx, W, H);
 
-    // Sternchen-Hintergrund
-    for (let i = 0; i < 40; i++) {
-      const sx = (i * 73 + 17) % W;
-      const sy = (i * 131 + 53) % H;
-      const tw = (Math.sin(performance.now()*0.001 + i) + 1) * 0.5;
-      ctx.fillStyle = `rgba(255,255,255,${0.1 + tw * 0.3})`;
-      ctx.fillRect(sx, sy, 2, 2);
-    }
+    // Leichtes Dunkel-Overlay, damit Bricks/Schläger immer gut lesbar bleiben
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, PLAYFIELD_TOP - 4, W, H - PLAYFIELD_TOP + 4);
 
     // Seiten-/Top-Walls (vor den Bricks, damit Bricks am Rand sauber clippen)
     drawWalls();
