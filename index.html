@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#1a0b2e" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Brick Fiesta</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" width="800" height="1000" aria-label="Brick Fiesta Spielfeld"></canvas>
+
+    <div id="hud">
+      <div class="hud-cell"><span class="lbl">Level</span><span id="hud-level">1</span></div>
+      <div class="hud-cell"><span class="lbl">Punkte</span><span id="hud-score">0</span></div>
+      <div class="hud-cell"><span class="lbl">Leben</span><span id="hud-lives">3</span></div>
+      <div class="hud-cell hud-btn" id="btn-pause" role="button" tabindex="0">II</div>
+      <div class="hud-cell hud-btn" id="btn-sound" role="button" tabindex="0">♪</div>
+    </div>
+
+    <div id="overlay" class="overlay show">
+      <div class="panel">
+        <h1>Brick Fiesta</h1>
+        <p class="tagline">Bunt. Schnell. Süchtigmachend.</p>
+        <div class="controls-hint">
+          <div><b>Maus / Touch:</b> Schläger bewegen</div>
+          <div><b>Klick / Tippen:</b> Ball starten</div>
+          <div><b>Tastatur:</b> ← → bewegen · Leertaste starten · P Pause · M stumm</div>
+        </div>
+        <button id="btn-start" class="btn-primary">Spiel starten</button>
+        <button id="btn-continue" class="btn-secondary" style="display:none">Weiter</button>
+        <div class="level-select">
+          <label>Startlevel: <input id="start-level" type="number" min="1" max="60" value="1" /></label>
+        </div>
+        <p class="credits">v1.0 · keine Tracker · läuft offline</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="levels.js"></script>
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
+  </script>
+</body>
+</html>

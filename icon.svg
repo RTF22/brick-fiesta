@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d1b4e"/>
+      <stop offset="100%" stop-color="#1a0b2e"/>
+    </linearGradient>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5cffe2"/>
+      <stop offset="100%" stop-color="#4a32c4"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="0.35" cy="0.35" r="0.65">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="50%" stop-color="#fff36b"/>
+      <stop offset="100%" stop-color="#ff8a3d"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Bricks -->
+  <g>
+    <rect x="40"  y="80"  width="100" height="40" rx="8" fill="#ff5cd2"/>
+    <rect x="150" y="80"  width="100" height="40" rx="8" fill="#ffb84a"/>
+    <rect x="260" y="80"  width="100" height="40" rx="8" fill="#5cffe2"/>
+    <rect x="370" y="80"  width="100" height="40" rx="8" fill="#7c5cff"/>
+    <rect x="40"  y="135" width="100" height="40" rx="8" fill="#5cff7a"/>
+    <rect x="150" y="135" width="100" height="40" rx="8" fill="#ff5c5c"/>
+    <rect x="260" y="135" width="100" height="40" rx="8" fill="#ffb84a"/>
+    <rect x="370" y="135" width="100" height="40" rx="8" fill="#ff5cd2"/>
+    <rect x="40"  y="190" width="100" height="40" rx="8" fill="#5cffe2"/>
+    <rect x="150" y="190" width="100" height="40" rx="8" fill="#7c5cff"/>
+    <rect x="260" y="190" width="100" height="40" rx="8" fill="#ff5cd2"/>
+    <rect x="370" y="190" width="100" height="40" rx="8" fill="#5cff7a"/>
+  </g>
+  <!-- Ball -->
+  <circle cx="256" cy="330" r="28" fill="url(#ball)"/>
+  <!-- Paddle -->
+  <rect x="170" y="400" width="172" height="28" rx="14" fill="url(#p)"/>
+  <rect x="178" y="406" width="156" height="6" rx="3" fill="rgba(255,255,255,0.35)"/>
+</svg>

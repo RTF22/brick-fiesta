@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.vscode/
+.idea/
+.claude/
+# Externe Musik-Tracks: derzeit deaktiviert, nicht im Repo
+assets/music/*.ogg
+assets/music/*.mp3
