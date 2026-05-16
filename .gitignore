@@ -5,6 +5,8 @@ node_modules/
 .vscode/
 .idea/
 .claude/
+# Interne Doku (nicht im Repo)
+.docs/
 # Externe Musik-Tracks: derzeit deaktiviert, nicht im Repo
 assets/music/*.ogg
 assets/music/*.mp3

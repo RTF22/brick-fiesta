@@ -128,6 +128,44 @@
   });
   window.addEventListener('keyup', (e) => { state.keys[e.key.toLowerCase()] = false; });
 
+  // === Gamepad (Xbox / PlayStation) ===========================
+  // Wird pro Frame in der Loop abgefragt; funktioniert sobald
+  // ein Controller vorhanden ist – ohne festen Verbindungs-State.
+  const gp = { prevAction: false, prevPause: false };
+  function pollGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let pad = null;
+    for (const p of pads) { if (p && p.connected && p.mapping === 'standard') { pad = p; break; } }
+    if (!pad) { for (const p of pads) { if (p && p.connected) { pad = p; break; } } }
+    if (!pad) { gp.prevAction = false; gp.prevPause = false; return; }
+
+    const speed = 14;
+
+    // Paddle nur bewegen, wenn das Spiel läuft (wie bei der Tastatur)
+    if (state.running && !state.paused) {
+      // Linker Stick X (Achse 0): analog proportional, Totzone 0.15
+      const ax = pad.axes && pad.axes.length > 0 ? pad.axes[0] : 0;
+      if (Math.abs(ax) > 0.15) {
+        state.paddle.x += ax * speed;
+        state.pointer.active = false;
+      }
+      // D-Pad links/rechts (Buttons 14/15): feste Geschwindigkeit
+      if (pad.buttons[14] && pad.buttons[14].pressed) { state.paddle.x -= speed; state.pointer.active = false; }
+      if (pad.buttons[15] && pad.buttons[15].pressed) { state.paddle.x += speed; state.pointer.active = false; }
+      state.paddle.x = Math.max(state.paddle.w/2, Math.min(W - state.paddle.w/2, state.paddle.x));
+    }
+
+    // A / Kreuz (Button 0): Aktion – flankengetriggert
+    const aBtn = !!(pad.buttons[0] && pad.buttons[0].pressed);
+    if (aBtn && !gp.prevAction) handleAction();
+    gp.prevAction = aBtn;
+
+    // Start (Button 9): Pause – flankengetriggert
+    const startBtn = !!(pad.buttons[9] && pad.buttons[9].pressed);
+    if (startBtn && !gp.prevPause) togglePause();
+    gp.prevPause = startBtn;
+  }
+
   function launchStuckBall(b) {
     // Winkel aus der Auftreffposition berechnen (wie beim normalen Paddle-Hit)
     const halfW = state.paddle.w / 2;
@@ -1169,6 +1207,7 @@
   function loop(t) {
     const dt = Math.min(33, t - lastT);
     lastT = t;
+    pollGamepad();
     update(dt);
     draw();
     requestAnimationFrame(loop);
