@@ -29,7 +29,7 @@ Service Worker und PWA-Install funktionieren nur über `http(s)://`, nicht via `
 1. Repository auf GitHub anlegen, Inhalt pushen.
 2. Im Repo unter **Settings → Pages** als Source **"GitHub Actions"** wählen.
 3. Der enthaltene Workflow `.github/workflows/pages.yml` deployt automatisch bei jedem Push auf `main`.
-4. Spiel ist erreichbar unter `https://<user>.github.io/<repo>/`.
+4. Spiel ist erreichbar unter <https://brick-fiesta.jensfricke.com> (Redirect auf `https://rtf22.github.io/brick-fiesta/`).
 
 ## Als App installieren
 
